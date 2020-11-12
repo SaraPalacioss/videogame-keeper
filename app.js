@@ -89,7 +89,6 @@ app.get('/all-videogames', (req, res, next)=>{
     .then((videogames)=>{
       res.render('allVideogames', {videogames});
     })
-
     .catch((err)=>{
         console.log(err);
         res.send(err);
