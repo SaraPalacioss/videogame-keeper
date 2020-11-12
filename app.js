@@ -54,9 +54,9 @@ app.post('/new-videogame', (req, res, next)=>{
 
     const splitString = (_string)=>{
         const genreString = req.body.genre;
-        const splittedGenreString = genreString.split(', ') 
+        const splittedGenreString = genreString.split(', ');
         return splittedGenreString;
-    }
+    };
 
     const arrayPlatform = splitString(req.body.platform);
     const arrayGenre = splitString(req.body.genre);
@@ -72,16 +72,28 @@ app.post('/new-videogame', (req, res, next)=>{
 });
 
 
+app.get('/videogame/:id', (req, res, next)=>{
+    const videogameID = req.params.id;
+    Videogame.findById(videogameID)
+    .then((result)=>{
+        res.render('singleVideogame', result);
+    })
+    .catch((error)=>{
+        res.send(error);
+    });
+});
+
+
 app.get('/all-videogames', (req, res, next)=>{
     Videogame.find({}, {name: 1, _id:0})
     .then((videogames)=>{
-      res.render('allVideogames', {videogames})
+      res.render('allVideogames', {videogames});
     })
 
     .catch((err)=>{
-        console.log(err)
-        res.send(err)  
-    })
+        console.log(err);
+        res.send(err);
+    });
 });
 //LISTENER
 
