@@ -1,15 +1,19 @@
 //DEPENDENCIES
-const chalk     = require("chalk");
-const dotenv    = require("dotenv");
-const express   = require("express");
-const hbs       = require("hbs");
-const mongoose  = require("mongoose");
-const bodyParser  = require("body-parser");
+const chalk         = require("chalk");
+const dotenv        = require("dotenv");
+const express       = require("express");
+const hbs           = require("hbs");
+const mongoose      = require("mongoose");
+const bodyParser    = require("body-parser");
+const bcrypt        = require('bcrypt');
+
 
 //CONSTANTS
 const app = express();
-const Videogame = require ('./models/Videogame');
 
+//MODELS
+const Videogame = require ('./models/Videogame');
+const User = require ('./models/User');
 //CONFIGURATION
 
 //configuración de .env
@@ -141,6 +145,25 @@ app.post('/edit-videogame/:id', (req, res, next)=>{
 })
 
 
+app.get('/sign-up', (req, res, next) => {
+    res.render('signUp')
+})
+
+app.post('/sign-up', (req, res, next) => {
+    
+    const {email, password} = req.body
+    let hashedUser = {email: email, password: ''}
+
+    bcrypt.genSalt(10)
+    .then((salt) =>{
+        bcrypt.hash(password, salt)
+        .then((hashedPassword) => {
+            hashedUser. password = hashedPassword
+            console.log(hashedUser)
+        })
+    })
+    
+})
 //LISTENER
 
 app.listen(process.env.PORT, ()=>{
