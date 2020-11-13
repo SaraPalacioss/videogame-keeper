@@ -1,11 +1,13 @@
 //DEPENDENCIES
-const chalk         = require("chalk");
-const dotenv        = require("dotenv");
-const express       = require("express");
-const hbs           = require("hbs");
-const mongoose      = require("mongoose");
-const bodyParser    = require("body-parser");
-const bcrypt        = require('bcrypt');
+const chalk             = require("chalk");
+const dotenv            = require("dotenv");
+const express           = require("express");
+const hbs               = require("hbs");
+const mongoose          = require("mongoose");
+const bodyParser        = require("body-parser");
+const bcrypt            = require('bcrypt');
+const session           = require('express-session');
+const MongoStore        = require('connect-mongo')(session)
 
 
 //CONSTANTS
@@ -21,7 +23,7 @@ require('dotenv').config();
 
 //Configuración de Mongoose
 mongoose.connect(`mongodb://localhost/${process.env.DATABASE}`, {
-    userCreateIndex: true,
+    useCreateIndex: true,
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify:false
@@ -44,6 +46,19 @@ app.set('views', __dirname + '/views');
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(express.static(__dirname + '/public'))
+
+
+//configuración de cookies
+app.use(session({
+    secret: "basic-auth-secret",
+    cookie: { maxAge: 60000 },
+    saveUninitialized: true,
+    resave: true,
+    store: new MongoStore({
+      mongooseConnection: mongoose.connection,
+      ttl: 24 * 60 * 60 // 1 day
+    })
+  }));
 
 //RUTA DE LA HOMEPAGE
 app.get('/', (req, resp, next)=>{
@@ -144,26 +159,71 @@ app.post('/edit-videogame/:id', (req, res, next)=>{
 
 })
 
+//VISUALIZAR PÁGINA DE SIGN UP
 
 app.get('/sign-up', (req, res, next) => {
     res.render('signUp')
 })
 
+//REGISTRAR UN NUEVO USUARIO
+
 app.post('/sign-up', (req, res, next) => {
     
     const {email, password} = req.body
-    let hashedUser = {email: email, password: ''}
-
-    bcrypt.genSalt(10)
-    .then((salt) =>{
-        bcrypt.hash(password, salt)
-        .then((hashedPassword) => {
-            hashedUser. password = hashedPassword
-            console.log(hashedUser)
-        })
-    })
     
+    User.findOne({email: email})
+    .then((result) => {
+        if(!result) {
+            bcrypt.genSalt(10)
+            .then((salt) =>{
+                bcrypt.hash(password, salt)
+                .then((hashedPassword) => {
+                    const hashedUser = {email: email, password: hashedPassword}
+                    User.create(hashedUser)
+                    .then((result) => {
+                        res.redirect('/')
+                    })
+                })
+            })
+            .catch((err) => {
+                console.log(err)
+                res.render(err)
+            })
+        } else {
+            res.render('login', {errorMessage: 'Este usuario ya existe. ¿Querías hacer Log In?'})
+        }
+    })
 })
+
+//ACCESO USUARIO REGISTRADO
+
+app.get('/log-in', (req, res, next) => {
+    res.render('login')
+})
+
+app.post('/log-in', (req, res, next) => {
+    const {email, password} = req.body
+    User.findOne({email: email})
+    .then((result) => {
+        if(!result){
+            res.render('login', {errorMessage: 'Este usuario no existe. Lo sentimos.'})
+        } else {
+            bcrypt.compare(password, result.password)
+            .then((resultFromBcrypt) => {
+                console.log(resultFromBcrypt)
+                if(resultFromBcrypt) {
+                    req.session.currentUser = email
+                    console.log(req.session)
+                    res.redirect('/')
+                    //req.session.destroy
+                } else {
+                    res.render('login', {errorMessage: 'Contraseña incorrecta. Por favor, vuelva a intentarlo'})
+                }
+            })
+        }
+    })
+})
+
 //LISTENER
 
 app.listen(process.env.PORT, ()=>{
