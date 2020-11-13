@@ -8,7 +8,8 @@ const videogameSchema = new Schema({
     developer: {type: String},
     releaseDate: {type: Date},
     rating: {type: Number},
-    pegi: {type: String}
+    pegi: {type: String},
+    imageUrl: {type: String}
 });
 
 const Videogame = mongoose.model('Videogame', videogameSchema);

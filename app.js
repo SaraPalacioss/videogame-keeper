@@ -39,22 +39,25 @@ app.set('views', __dirname + '/views');
 //configuración de body parser
 app.use(bodyParser.urlencoded({extended: true}));
 
+app.use(express.static(__dirname + '/public'))
 
-
-//ROUTES
+//RUTA DE LA HOMEPAGE
 app.get('/', (req, resp, next)=>{
     resp.render('home');
 });
 
+//RUTA GET PARA RENDERIZAR EL FORMULARIO DE CREACIÓN DE UN NUEVO VIDEOJUEGO
 app.get('/new-videogame', (req, res, next)=>{
     res.render('newVideogame');
 });
+
+// RUTA POST PARA CREAR UN NUEVO VIDEOJUEGO
 
 app.post('/new-videogame', (req, res, next)=>{
 
     const splitString = (_string)=>{
         const genreString = req.body.genre;
-        const splittedGenreString = genreString.split(', ');
+        const splittedGenreString = genreString.split(',');
         return splittedGenreString;
     };
 
@@ -66,12 +69,12 @@ app.post('/new-videogame', (req, res, next)=>{
     Videogame.create(newVideogame)
         .then((result)=>{
             console.log(result);
-            res.render('newVideogame');
+            res.redirect('/all-videogames');
             })
         .catch((err)=>console.log(err));
 });
 
-
+// RUTA GET PARA VER UN VIDEOJUEGO
 app.get('/videogame/:id', (req, res, next)=>{
     const videogameID = req.params.id;
     Videogame.findById(videogameID)
@@ -83,9 +86,9 @@ app.get('/videogame/:id', (req, res, next)=>{
     });
 });
 
-
+// RUTA GET PARA VER TODOS LOS VIDEOJUEGOS
 app.get('/all-videogames', (req, res, next)=>{
-    Videogame.find({}, {name: 1, _id:0})
+    Videogame.find({}, {name: 1, _id:1, imageUrl: 1}, {sort: {rating: -1}})
     .then((videogames)=>{
       res.render('allVideogames', {videogames});
     })
@@ -94,6 +97,50 @@ app.get('/all-videogames', (req, res, next)=>{
         res.send(err);
     });
 });
+
+// RUTA GET PARA BORRAR UN VIDEOJUEGO
+app.post('/delete-game/:id', (req, res, next) =>{
+    const id = req.params.id
+    Videogame.findByIdAndDelete(id)
+    .then(()=>{
+        res.redirect('/all-videogames')
+    })
+
+    .catch((err)=> {
+        console.log(err)
+        res.send(err)
+    })
+})
+
+
+// RUTA GET PARA VER EL FORMULARIO DE EDICION DE UN VIDEOJUEGO
+app.get('/edit-videogame/:id', (req, res, next)=>{
+    const id = req.params.id
+    Videogame.findById(id)
+    .then((result)=>{
+        res.render('editForm', result)
+    })
+    .catch((err)=>{
+        console.log(err)
+        res.render(err)
+    })
+    
+ 
+})
+
+//RUTA POST PARA EDITAR UN GAME ESPECÍFICO
+
+app.post('/edit-videogame/:id', (req, res, next)=>{
+    const id = req.params.id
+    const editedVideogame = req.body
+    Videogame.findByIdAndUpdate(id,  editedVideogame)
+    .then(()=>{
+        res.redirect(`/videogame/${id}`)
+    })
+
+})
+
+
 //LISTENER
 
 app.listen(process.env.PORT, ()=>{
